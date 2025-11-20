@@ -1,3 +1,4 @@
+localStorage.removeItem('teamWishes');
 const list = document.getElementById('wish-list');
 const modal = document.getElementById('modal');
 const deleteModal = document.getElementById('delete-modal');
