@@ -1,4 +1,3 @@
-const API = '/api/wishes';
 const list = document.getElementById('wish-list');
 const modal = document.getElementById('modal');
 const deleteModal = document.getElementById('delete-modal');
@@ -6,11 +5,22 @@ const overlay = document.getElementById('overlay');
 const form = document.getElementById('wish-form');
 
 let deleteId = null;
+const STORAGE_KEY = 'teamWishes';
+
+// Get wishes from localStorage
+function getWishes() {
+    const data = localStorage.getItem(STORAGE_KEY);
+    return data ? JSON.parse(data) : [];
+}
+
+// Save wishes to localStorage
+function saveWishes(wishes) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(wishes));
+}
 
 // Fetch & Render
-async function load() {
-    const res = await fetch(API);
-    const data = await res.json();
+function load() {
+    const data = getWishes();
     list.innerHTML = data.map(w => `
         <div class="card">
             <h3>${esc(w.name)}</h3>
@@ -24,29 +34,34 @@ async function load() {
 }
 
 // Add/Edit
-form.onsubmit = async (e) => {
+form.onsubmit = (e) => {
     e.preventDefault();
     const id = document.getElementById('wish-id').value;
     const name = document.getElementById('name').value;
     const wish = document.getElementById('wish').value;
-
-    const method = id ? 'PUT' : 'POST';
-    const url = id ? `${API}/${id}` : API;
-
-    await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, wish })
-    });
-
+    
+    let wishes = getWishes();
+    
+    if (id) {
+        // Edit existing
+        wishes = wishes.map(w => w.id === parseInt(id) ? { id: parseInt(id), name, wish } : w);
+    } else {
+        // Add new
+        const newId = wishes.length > 0 ? Math.max(...wishes.map(w => w.id)) + 1 : 1;
+        wishes.push({ id: newId, name, wish });
+    }
+    
+    saveWishes(wishes);
     closeModals();
     load();
 };
 
 // Delete
-document.getElementById('confirm-delete').onclick = async () => {
+document.getElementById('confirm-delete').onclick = () => {
     if (deleteId) {
-        await fetch(`${API}/${deleteId}`, { method: 'DELETE' });
+        let wishes = getWishes();
+        wishes = wishes.filter(w => w.id !== deleteId);
+        saveWishes(wishes);
         closeModals();
         load();
     }
